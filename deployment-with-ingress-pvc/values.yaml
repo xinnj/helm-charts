@@ -119,7 +119,7 @@ tolerations: []
 
 affinity: {}
 
-env: []
-  # - name: foo
-  #   value: bar
+env:
+  - name: 'TZ'
+    value: 'Asia/Shanghai'
 
