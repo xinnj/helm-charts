@@ -1,4 +1,2 @@
-A starter of deployment with:
-- env
-- clusterrole
+A starter of deployment with clusterrole
 

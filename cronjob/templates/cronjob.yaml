@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "<CHARTNAME>.fullname" . }}
+  labels:
+    {{- include "<CHARTNAME>.labels" . | nindent 4 }}
+spec:
+  schedule: "{{ .Values.cronjob.schedule }}"
+  concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy }}
+  timeZone: {{ .Values.cronjob.timezone }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          {{- with .Values.podAnnotations }}
+          annotations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          labels:
+            {{- include "<CHARTNAME>.labels" . | nindent 12 }}
+            {{- with .Values.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        spec:
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          serviceAccountName: {{ include "<CHARTNAME>.serviceAccountName" . }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: {{ .Chart.Name }}
+              image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              command:
+                - sh
+                - -c
+                - {{ .Values.cronjob.command }}
+              env:
+                {{- toYaml .Values.env | nindent 16 }}
+          restartPolicy: {{ .Values.cronjob.restartPolicy }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
