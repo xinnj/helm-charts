@@ -5,6 +5,7 @@ metadata:
   labels:
     {{- include "<CHARTNAME>.labels" . | nindent 4 }}
 spec:
+  suspend: {{ .Values.cronjob.schedule | default false }}
   schedule: "{{ .Values.cronjob.schedule }}"
   concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy }}
   timeZone: {{ .Values.cronjob.timezone }}

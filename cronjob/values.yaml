@@ -62,6 +62,7 @@ env:
     value: 'Asia/Shanghai'
 
 cronjob:
+  suspend: false
   schedule: '10 * * * *'
   timezone: 'Asia/Shanghai'
   concurrencyPolicy: 'Forbid'
