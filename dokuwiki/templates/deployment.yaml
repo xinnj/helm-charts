@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dokuwiki.fullname" . }}
+  labels:
+    {{- include "dokuwiki.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "dokuwiki.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "dokuwiki.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "dokuwiki.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: prepare-base-dir
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          command:
+            - /bin/bash
+            - -ec
+            - |
+              echo "Copy code to /var/www/html/"
+              cp -rf /var/www/html/. "/code/"
+              if [[ "$DOKU_BASEDIR" != "" && "$DOKU_BASEDIR" != "/" ]]; then
+                echo "Copy code to /var/www/html${DOKU_BASEDIR}"
+                mkdir -p "/code${DOKU_BASEDIR}"
+                cp -rf /var/www/html/. "/code${DOKU_BASEDIR}"
+                echo "Change conf['basedir']"
+                sed -i -E "s#(conf\['basedir'\]\s*=\s*').*?(';)#\1${DOKU_BASEDIR}\2#" "/code${DOKU_BASEDIR}conf.core/dokuwiki.php"
+                echo "Setup completed"
+              fi
+          volumeMounts:
+            - name: {{ include "dokuwiki.fullname" . }}-code
+              mountPath: /code
+          env:
+            - name: DOKU_BASEDIR
+              value: {{ .Values.baseDir }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.containerPort }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: {{ include "dokuwiki.fullname" . }}-code
+              mountPath: /var/www/html
+            - mountPath: {{ .Values.persistence.mountPath }}
+              name: {{ include "dokuwiki.fullname" . }}-data
+          env:
+            - name: DOKU_BASEDIR
+              value: {{ .Values.baseDir }}
+            {{- toYaml .Values.env | nindent 12 }}
+      volumes:
+        - name: {{ include "dokuwiki.fullname" . }}-code
+          emptyDir: {}
+        - name: {{ include "dokuwiki.fullname" . }}-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.existingClaim | default (printf "%s-%s" (include "dokuwiki.fullname" .) "data") }}
+          {{- else }}
+          emptyDir: { }
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

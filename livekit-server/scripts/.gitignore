@@ -1,0 +1,4 @@
+# Local venv and secrets (never commit these)
+.venv/
+.env
+__pycache__/
