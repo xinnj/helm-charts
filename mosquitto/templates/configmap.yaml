@@ -1,0 +1,66 @@
+{{/* SPDX-License-Identifier: Apache-2.0 */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "mosquitto.fullname" . }}-config
+  labels:
+    {{- include "mosquitto.labels" . | nindent 4 }}
+data:
+  mosquitto.conf.tmpl: |
+    persistence {{ ternary "true" "false" .Values.broker.persistence.enabled }}
+    persistence_location /mosquitto/data/
+    log_dest stdout
+    allow_anonymous {{ ternary "false" "true" .Values.auth.enabled }}
+    per_listener_settings false
+
+    {{- if not .Values.broker.tls.enabled }}
+    listener {{ .Values.broker.listeners.mqtt }} 0.0.0.0
+    protocol mqtt
+    {{- end }}
+
+    {{- if .Values.broker.listeners.websocketEnabled }}
+    listener {{ .Values.broker.listeners.websocket }} 0.0.0.0
+    protocol websockets
+    {{- end }}
+
+    {{- if .Values.broker.tls.enabled }}
+    listener {{ .Values.broker.tls.port }} 0.0.0.0
+    protocol mqtt
+    certfile /mosquitto/config/tls/{{ .Values.broker.tls.certFile }}
+    keyfile /mosquitto/config/tls/{{ .Values.broker.tls.keyFile }}
+    {{- if .Values.broker.tls.caFile }}
+    cafile /mosquitto/config/tls/{{ .Values.broker.tls.caFile }}
+    {{- end }}
+    require_certificate {{ ternary "true" "false" .Values.broker.tls.requireCertificate }}
+    use_identity_as_username {{ ternary "true" "false" .Values.broker.tls.useIdentityAsUsername }}
+    {{- end }}
+
+    {{- if .Values.auth.enabled }}
+    password_file /mosquitto/config/generated/passwordfile
+    {{- end }}
+    {{- if .Values.acl.enabled }}
+    acl_file /mosquitto/config/generated/aclfile
+    {{- end }}
+    {{- if gt (int .Values.broker.limits.maxConnections) 0 }}
+    max_connections {{ .Values.broker.limits.maxConnections }}
+    {{- end }}
+    {{- if gt (int .Values.broker.limits.maxInflightMessages) 0 }}
+    max_inflight_messages {{ .Values.broker.limits.maxInflightMessages }}
+    {{- end }}
+    {{- if gt (int .Values.broker.limits.maxQueuedMessages) 0 }}
+    max_queued_messages {{ .Values.broker.limits.maxQueuedMessages }}
+    {{- end }}
+    {{- if gt (int .Values.broker.limits.maxQueuedBytes) 0 }}
+    max_queued_bytes {{ .Values.broker.limits.maxQueuedBytes }}
+    {{- end }}
+    {{- $maxPacketSize := int .Values.broker.limits.maxPacketSize }}
+    {{- $legacyMessageSizeLimit := int .Values.broker.limits.messageSizeLimit }}
+    {{- if gt $maxPacketSize 0 }}
+    max_packet_size {{ $maxPacketSize }}
+    {{- else if gt $legacyMessageSizeLimit 0 }}
+    max_packet_size {{ $legacyMessageSizeLimit }}
+    {{- end }}
+
+    {{- with .Values.broker.extraConfig }}
+    {{ . | nindent 4 }}
+    {{- end }}

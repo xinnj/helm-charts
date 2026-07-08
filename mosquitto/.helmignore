@@ -1,0 +1,33 @@
+# CI
+ci/
+
+# Examples
+examples/
+
+# Docs
+docs/
+DESIGN.md
+
+# Tests
+tests/
+
+# Git
+.git/
+.gitignore
+.gitmodules
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude
+.claude/
+
+# macOS
+.DS_Store
+
+# Helm
+*.tgz

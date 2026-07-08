@@ -1,2 +1,2 @@
-# helm-chart-starters
+# helm-charts
 
