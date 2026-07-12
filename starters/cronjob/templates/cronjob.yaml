@@ -41,7 +41,10 @@ spec:
                 - -c
                 - {{ .Values.cronjob.command }}
               env:
-                {{- toYaml .Values.env | nindent 16 }}
+                {{- range $key, $value := .Values.env }}
+                - name: {{ $key | quote }}
+                  value: {{ $value | quote }}
+                {{- end }}
           restartPolicy: {{ .Values.cronjob.restartPolicy }}
           {{- with .Values.nodeSelector }}
           nodeSelector:

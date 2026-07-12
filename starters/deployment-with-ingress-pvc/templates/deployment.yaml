@@ -50,7 +50,10 @@ spec:
             - mountPath: {{ .Values.persistence.mountPath }}
               name: {{ include "<CHARTNAME>.fullname" . }}-data
           env:
-            {{- toYaml .Values.env | nindent 12 }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
       volumes:
         - name: {{ include "<CHARTNAME>.fullname" . }}-data
           {{- if .Values.persistence.enabled }}

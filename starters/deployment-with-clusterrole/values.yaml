@@ -76,6 +76,5 @@ tolerations: []
 affinity: {}
 
 env:
-  - name: 'TZ'
-    value: 'Asia/Shanghai'
+  TZ: 'Asia/Shanghai'
 
