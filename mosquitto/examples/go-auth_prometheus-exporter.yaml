@@ -52,13 +52,15 @@ broker:
     auth_opt_backends files, http
     auth_opt_files_password_path /mosquitto/config/generated/passwordfile
     auth_opt_files_acl_path /mosquitto/config/generated/aclfile
-    auth_opt_http_host http://mqtt-auth-service
-    auth_opt_http_port 8080
+    auth_opt_http_host mqtt-auth-service
+    auth_opt_http_port 80
     auth_opt_http_getuser_uri /mqtt/auth
     auth_opt_http_aclcheck_uri /mqtt/acl
     auth_opt_http_response_mode status
     auth_opt_http_params_mode json
     auth_opt_http_timeout 5
+    auth_opt_disable_superuser true
+    auth_opt_log_level info
 
     # Suppress connect/disconnect log noise from health checks
     connection_messages false
@@ -136,6 +138,9 @@ broker:
 auth:
   # -- Enable username/password authentication
   enabled: true
+  # -- Auth mode: "native" uses Mosquitto's built-in password_file/acl_file;
+  #    "go-auth" delegates to the go-auth plugin for backend chaining (files → http).
+  mode: go-auth
   # -- Username stored in the generated password file
   username: exporter
   # -- Password stored in the generated password file. Auto-generated if empty.

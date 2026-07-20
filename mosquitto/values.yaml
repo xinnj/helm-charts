@@ -118,6 +118,10 @@ broker:
 auth:
   # -- Enable username/password authentication
   enabled: false
+  # -- Auth mode: "native" uses Mosquitto's built-in password_file/acl_file directives;
+  #    "go-auth" delegates to the go-auth plugin, which supports backend chaining
+  #    (e.g. files + http) so non-file users fall through to Portal /mqtt/auth.
+  mode: native
   # -- Username stored in the generated password file
   username: mqtt
   # -- Password stored in the generated password file. Auto-generated if empty.

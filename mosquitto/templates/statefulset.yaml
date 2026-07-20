@@ -61,7 +61,12 @@ spec:
               mkdir -p /work
               cp /config-template/mosquitto.conf.tmpl /work/mosquitto.conf
               {{- if .Values.auth.enabled }}
+              {{- if eq .Values.auth.mode "native" }}
               mosquitto_passwd -b -c /work/passwordfile "$AUTH_USERNAME" "$AUTH_PASSWORD"
+              {{- else }}
+              HASH=$(/mosquitto/pw -p "$AUTH_PASSWORD")
+              printf '%s:%s\n' "$AUTH_USERNAME" "$HASH" > /work/passwordfile
+              {{- end }}
               chown mosquitto:mosquitto /work/passwordfile
               chmod 0700 /work/passwordfile
               {{- end }}

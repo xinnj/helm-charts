@@ -35,10 +35,10 @@ data:
     use_identity_as_username {{ ternary "true" "false" .Values.broker.tls.useIdentityAsUsername }}
     {{- end }}
 
-    {{- if .Values.auth.enabled }}
+    {{- if and .Values.auth.enabled (eq .Values.auth.mode "native") }}
     password_file /mosquitto/config/generated/passwordfile
     {{- end }}
-    {{- if .Values.acl.enabled }}
+    {{- if and .Values.acl.enabled (eq .Values.auth.mode "native") }}
     acl_file /mosquitto/config/generated/aclfile
     {{- end }}
     {{- if gt (int .Values.broker.limits.maxConnections) 0 }}
