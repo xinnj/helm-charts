@@ -126,12 +126,17 @@ spec:
         - name: coturn
           image: "{{ .Values.coturn.image }}"
           imagePullPolicy: {{ .Values.coturn.imagePullPolicy | default "IfNotPresent" }}
-          # relay-ip/external-ip = node private IP (status.hostIP) so the co-located
-          # SFU can reach the relay. NOT the NAT egress IP (no inbound).
+          # relay-ip is the node private IP (status.hostIP). When
+          # coturn.externalIP is set, external-ip uses the public/private NAT
+          # pair so relay candidates are reachable by remote peers.
           command:
             - sh
             - -c
+            {{- if .Values.coturn.externalIP }}
+            - exec turnserver -c /etc/coturn/turnserver.conf --relay-ip=$NODE_IP --external-ip={{ .Values.coturn.externalIP }}/$NODE_IP
+            {{- else }}
             - exec turnserver -c /etc/coturn/turnserver.conf --relay-ip=$NODE_IP --external-ip=$NODE_IP
+            {{- end }}
           env:
             - name: NODE_IP
               valueFrom:

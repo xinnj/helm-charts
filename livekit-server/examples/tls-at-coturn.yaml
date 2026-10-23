@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: livekit/livekit-server
   pullPolicy: IfNotPresent
-  tag: v1.13.0
+  tag: v1.13.10
 
 imagePullSecrets: []
 
@@ -24,16 +24,21 @@ livekit:
     port_range_start: 50000
     port_range_end: 60000
     use_external_ip: true
+    # Also advertise the node's private IP. The co-located coturn sidecar
+    # reaches the SFU from that private address, so browsers must permit it
+    # when using TURN. The public candidate is still advertised for direct
+    # connections.
+    advertise_internal_ip: true
     turn_servers:
       # Advertised TURN endpoints clients connect to. Backed by the coturn sidecar
       # (see the top-level coturn: block). secret MUST equal coturn.secret.
       - host: stream.example.com
-        port: 33478
+        port: 443
         protocol: udp
         secret: "<your secret>"
         ttl: 14400
       - host: stream.example.com
-        port: 35349
+        port: 5349
         protocol: tls
         secret: "<your secret>"
         ttl: 14400
@@ -120,12 +125,16 @@ coturn:
   # TURN long-term-auth realm (value is arbitrary; clients read it from the challenge)
   realm: livekit
   # coturn ports. With hostNetwork these bind the node directly; align with the NLB
-  # backend mapping (NLB 33478 -> listeningPort, 35439 -> tlsPort).
+  # backend mapping (NLB 443 -> listeningPort, 5349 -> tlsPort).
   # listeningPort serves BOTH UDP and plain TCP TURN (coturn's `listening-port`).
   listeningPort: 3478
   tlsPort: 5349
   relayPortStart: 30000
   relayPortEnd: 40000
+  # Keep the relay on the private node IP: the co-located SFU cannot hairpin to
+  # this node's EIP on Aliyun (EIPs live on the public gateway). LiveKit
+  # advertises its internal candidate instead (rtc.advertise_internal_ip).
+  externalIP: ""
   tls:
     # true  = coturn terminates TLS on tlsPort (needs cert; NLB stays TCP passthrough)
     # false = TLS terminated at the NLB (coturn serves plain TCP on listeningPort)

@@ -18,6 +18,9 @@ Please ensure that the following ports on the nodes are open on your firewall.
 * TURN/TLS {{ .Values.livekit.turn.tls_port }}
 {{- end }}
 {{- end }}
+{{- if .Values.coturn.enabled }}
+* TURN relay UDP {{ .Values.coturn.relayPortStart }} - {{ .Values.coturn.relayPortEnd }}{{ if .Values.coturn.externalIP }} on {{ .Values.coturn.externalIP }}{{ end }}
+{{- end }}
 
 {{- if ne .Values.loadBalancer.type "disable" }}
 

@@ -1,4 +1,7 @@
 # Local venv and secrets (never commit these)
 .venv/
-.env
+.env.qa
 __pycache__/
+
+# Browser test dependency (npm ci recreates it)
+browser/node_modules/

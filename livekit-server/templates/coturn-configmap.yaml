@@ -9,9 +9,10 @@ data:
   turnserver.conf: |
     # coturn for LiveKit — validates the REST credentials LiveKit issues via
     # rtc.turn_servers (use-auth-secret). Runs as a sidecar in the livekit-server
-    # pod (hostNetwork). relay-ip / external-ip are passed on the command line
-    # from the pod's status.hostIP (the node private IP) so the co-located SFU can
-    # reach the relay — see deployment.yaml.
+    # pod (hostNetwork). relay-ip is the pod's status.hostIP (node private IP).
+    # external-ip is either that private IP or, when coturn.externalIP is set,
+    # <public>/<private> so relay candidates are reachable by remote peers — see
+    # deployment.yaml.
     listening-ip=0.0.0.0
     listening-port={{ .Values.coturn.listeningPort }}
     log-file=stdout
@@ -28,13 +29,13 @@ data:
     # read it from the 401 challenge; it need not match DNS/cert/LiveKit).
     realm={{ .Values.coturn.realm }}
     {{- if .Values.coturn.tls.enabled }}
-    # TLS terminated in coturn (NLB stays TCP passthrough 35439 -> node:{{ .Values.coturn.tlsPort }}).
+    # TLS terminated in coturn (NLB stays TCP passthrough 5349 -> node:{{ .Values.coturn.tlsPort }}).
     tls-listening-port={{ .Values.coturn.tlsPort }}
     cert=/etc/coturn/certs/tls.crt
     pkey=/etc/coturn/certs/tls.key
     {{- else }}
     # TLS terminated at the NLB -> coturn receives plain TCP. Point the NLB's
-    # TLS-terminated 35439 backend at node:{{ .Values.coturn.listeningPort }}/tcp.
+    # TLS-terminated 5349 backend at node:{{ .Values.coturn.listeningPort }}/tcp.
     no-tls
     no-dtls
     {{- end }}

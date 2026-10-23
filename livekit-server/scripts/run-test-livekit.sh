@@ -44,8 +44,41 @@ if [ ! -x "$VENV_DIR/bin/python" ]; then
   python3 -m venv "$VENV_DIR"
   "$VENV_DIR/bin/pip" install --quiet --upgrade pip
   # test-livekit.py needs livekit.api (token) + livekit.protocol (protobuf) +
-  # websockets. livekit-api pulls livekit-protocol/protobuf/pyjwt.
-  "$VENV_DIR/bin/pip" install --quiet livekit-api websockets
+  # websockets for phases 1-4, aioice for the phase 5 ICE check, aiortc for
+  # phases 6-7, and playwright for the phase 8 real-browser check.
+  "$VENV_DIR/bin/pip" install --quiet livekit-api websockets \
+    "aioice>=0.10,<1" aiortc "playwright>=1.64,<2"
+fi
+
+# A venv created by an older version of this script may lack a dependency.
+if ! "$VENV_DIR/bin/python" -c "import aioice" >/dev/null 2>&1; then
+  echo "Installing missing dependency aioice ..."
+  "$VENV_DIR/bin/pip" install --quiet "aioice>=0.10,<1"
+fi
+if ! "$VENV_DIR/bin/python" -c "import aiortc" >/dev/null 2>&1; then
+  echo "Installing missing dependency aiortc ..."
+  "$VENV_DIR/bin/pip" install --quiet aiortc
+fi
+if ! "$VENV_DIR/bin/python" -c "import playwright" >/dev/null 2>&1; then
+  echo "Installing missing dependency playwright ..."
+  if ! "$VENV_DIR/bin/pip" install --quiet "playwright>=1.64,<2"; then
+    echo "warning: playwright install failed; Phase 8 will be skipped" >&2
+  fi
+fi
+
+# Phase 8 runs the official livekit-client SDK in Chrome. Serve a pinned local
+# bundle; the pinned CDN is only a fallback when npm is unavailable.
+BROWSER_DIR="$SCRIPT_DIR/browser"
+BROWSER_SDK="$BROWSER_DIR/node_modules/livekit-client/dist/livekit-client.esm.mjs"
+if [ ! -f "$BROWSER_SDK" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "Installing browser dependency livekit-client ..."
+    if ! (cd "$BROWSER_DIR" && npm ci --no-audit --no-fund --loglevel=error); then
+      echo "warning: npm ci failed; Phase 8 will try the pinned CDN" >&2
+    fi
+  else
+    echo "warning: npm not found; Phase 8 will try the pinned CDN" >&2
+  fi
 fi
 
 # --- Run (pass through any CLI args, e.g. -v / --insecure-tls / --timeout) ----

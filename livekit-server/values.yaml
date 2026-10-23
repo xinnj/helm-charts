@@ -7,7 +7,7 @@ replicaCount: 1
 image:
   repository: livekit/livekit-server
   pullPolicy: IfNotPresent
-  tag: v1.13.0
+  tag: v1.13.10
 
 imagePullSecrets: []
 
@@ -24,6 +24,9 @@ livekit:
     port_range_start: 50000
     port_range_end: 60000
     use_external_ip: true
+    # Also advertise the node's private IP (requires use_external_ip). Set this
+    # when clients reach the SFU through a co-located TURN server.
+    # advertise_internal_ip: true
   redis:
     {}
     # supports sentinels and cluster, see above
@@ -86,12 +89,19 @@ coturn:
   # TURN long-term-auth realm (value is arbitrary; clients read it from the challenge)
   realm: livekit
   # coturn ports. With hostNetwork these bind the node directly; align with the NLB
-  # backend mapping (NLB 33478 -> listeningPort, 35439 -> tlsPort).
+  # backend mapping (NLB 443 -> listeningPort, 5349 -> tlsPort).
   # listeningPort serves BOTH UDP and plain TCP TURN (coturn's `listening-port`).
   listeningPort: 3478
   tlsPort: 5349
   relayPortStart: 30000
   relayPortEnd: 40000
+  # Public IP advertised in TURN relay candidates when the TURN server is NOT
+  # co-located with the SFU (1:1 NAT). Leave empty for the co-located sidecar:
+  # the SFU cannot hairpin to the node's own EIP on most clouds, so set
+  # livekit.rtc.advertise_internal_ip instead. When set, coturn runs with
+  # --external-ip=<externalIP>/<nodeIP>; the EIP's security group must allow
+  # UDP relayPortStart-relayPortEnd inbound.
+  externalIP: ""
   tls:
     # true  = coturn terminates TLS on tlsPort (needs cert; NLB stays TCP passthrough)
     # false = TLS terminated at the NLB (coturn serves plain TCP on listeningPort)
